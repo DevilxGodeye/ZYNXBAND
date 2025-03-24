@@ -2,9 +2,11 @@ const awsIot = require("aws-iot-device-sdk");
 const WebSocket = require("ws");
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 app.use(cors()); // Allow cross-origin requests
+app.use(express.static(__dirname)); // Serve frontend files
 
 const server = require("http").createServer(app);
 const wss = new WebSocket.Server({ server });
@@ -13,9 +15,9 @@ let latestSensorData = {}; // Store the latest sensor data
 
 // Connect to AWS IoT Core
 const device = awsIot.device({
-  keyPath: "C:/Users/2793884/Desktop/AWS/904ac0ebf11c07de5823a25d2d19b24d345b7f24763c857f1dbaab377f68d24d-private.pem.key",
-  certPath: "C:/Users/2793884/Desktop/AWS/904ac0ebf11c07de5823a25d2d19b24d345b7f24763c857f1dbaab377f68d24d-certificate.pem.crt",
-  caPath: "C:/Users/2793884/Desktop/AWS/AmazonRootCA1.pem",
+  keyPath: path.join(__dirname, "certs/private.pem.key"),
+  certPath: path.join(__dirname, "certs/certificate.pem.crt"),
+  caPath: path.join(__dirname, "certs/AmazonRootCA1.pem"),
   clientId: "iotclient-0a16bd7-956b-4d49-a055-0a68f67d1e10",
   host: "a1m6qtqn3ap0gc-ats.iot.eu-central-1.amazonaws.com", // Replace with your actual endpoint
 });
@@ -58,5 +60,11 @@ wss.on("connection", (ws) => {
   ws.on("close", () => console.log("❌ WebSocket client disconnected"));
 });
 
-// Start Server
-server.listen(5000, () => console.log("🚀 Server running on port 5000"));
+// Handle all other routes by serving index.html
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Start Server on Vercel Port
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
